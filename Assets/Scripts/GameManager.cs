@@ -8,7 +8,7 @@ public class GameManager : MonoBehaviourPunCallbacks
     public static GameManager Instance { get; private set; }
 
     [Header("Referencias")]
-    [SerializeField] private ScoreboardUI scoreboard;
+    [SerializeField] private ScoreBoardUI scoreboard;
     [SerializeField] private Transform[] team0SpawnPoints;
     [SerializeField] private Transform[] team1SpawnPoints;
     [SerializeField] private GameObject paddlePrefab;

@@ -46,22 +46,22 @@ public class PaddleController : MonoBehaviourPun
         }
     }
 
-    public override void OnEnable()
+    public void OnEnable()
     {
-        base.OnEnable();
+        //base.OnEnable();
         GameManager.Instance.RegisterPaddle(this);
     }
 
-    public override void OnDisable()
+    public void OnDisable()
     {
-        base.OnDisable();
+        //base.OnDisable();
         if (GameManager.Instance != null)
         {
             GameManager.Instance.UnregisterPaddle(this);
         }
     }
 
-    public override void OnPhotonInstantiate(PhotonMessageInfo info)
+    public void OnPhotonInstantiate(PhotonMessageInfo info)
     {
         object[] data = info.photonView.InstantiationData;
         if (data == null || data.Length < 2)

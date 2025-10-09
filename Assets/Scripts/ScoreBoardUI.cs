@@ -1,7 +1,7 @@
 using UnityEngine;
 using TMPro;
 
-public class ScoreboardUI : MonoBehaviour
+public class ScoreBoardUI : MonoBehaviour
 {
     [Header("Marcador")]
     [SerializeField] private TMP_Text team0ScoreLabel;
