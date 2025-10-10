@@ -67,12 +67,19 @@ public class GameManager : MonoBehaviourPunCallbacks
             : team1SpawnPoints[nextSpawnIndexTeam1++ % team1SpawnPoints.Length];
 
         object[] instantiateData = { player.ActorNumber, teamIndex };
-        PhotonNetwork.InstantiateRoomObject(
+
+        GameObject paddleGO = PhotonNetwork.InstantiateRoomObject(
             paddlePrefab.name,
             spawnPoint.position,
             spawnPoint.rotation,
             0,
             instantiateData);
+
+        PhotonView view = paddleGO.GetComponent<PhotonView>();
+        if (view != null && view.OwnerActorNr != player.ActorNumber)
+        {
+            view.TransferOwnership(player);
+        }
     }
 
     private void SpawnBall()
