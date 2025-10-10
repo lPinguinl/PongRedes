@@ -19,33 +19,60 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     private void Start()
     {
-        EnsureLocalCustomProperties();
+        PhotonNetwork.AutomaticallySyncScene = true;
+
+        EnsureReadyFlag(PhotonNetwork.LocalPlayer);
+        EnsureTeamForPlayer(PhotonNetwork.LocalPlayer);
+
+        startButton.onClick.RemoveAllListeners();
         startButton.onClick.AddListener(OnStartButtonPressed);
         startButton.gameObject.SetActive(PhotonNetwork.IsMasterClient);
+
         RebuildPlayerList();
         RefreshLobbyStatus();
         RefreshStartButtonState();
     }
 
-    private void EnsureLocalCustomProperties()
+    private void EnsureReadyFlag(Player player)
     {
-        Hashtable pendingChanges = new Hashtable();
+        if (player.CustomProperties.ContainsKey("ready")) return;
 
-        if (!PhotonNetwork.LocalPlayer.CustomProperties.TryGetValue("team", out _))
+        Hashtable props = new Hashtable { { "ready", false } };
+        if (player == PhotonNetwork.LocalPlayer)
         {
-            int index = System.Array.IndexOf(PhotonNetwork.PlayerList, PhotonNetwork.LocalPlayer);
-            pendingChanges.Add("team", index % 2);
+            PhotonNetwork.LocalPlayer.SetCustomProperties(props);
         }
+        else if (PhotonNetwork.IsMasterClient)
+        {
+            player.SetCustomProperties(props);
+        }
+    }
 
-        if (!PhotonNetwork.LocalPlayer.CustomProperties.TryGetValue("ready", out _))
-        {
-            pendingChanges.Add("ready", false);
-        }
+    private void EnsureTeamForPlayer(Player player)
+    {
+        if (ReadTeamIndex(player) != -1) return;
 
-        if (pendingChanges.Count > 0)
+        int team = ChooseTeamForNextPlayer(player);
+
+        Hashtable props = new Hashtable { { "team", team } };
+        if (player == PhotonNetwork.LocalPlayer)
         {
-            PhotonNetwork.LocalPlayer.SetCustomProperties(pendingChanges);
+            PhotonNetwork.LocalPlayer.SetCustomProperties(props);
         }
+        else if (PhotonNetwork.IsMasterClient)
+        {
+            player.SetCustomProperties(props);
+        }
+    }
+
+    private int ChooseTeamForNextPlayer(Player player)
+    {
+        int team0Count = PhotonNetwork.PlayerList.Count(p => ReadTeamIndex(p) == 0);
+        int team1Count = PhotonNetwork.PlayerList.Count(p => ReadTeamIndex(p) == 1);
+
+        // El nuevo jugador todavía tiene team = -1, así que no cuenta en los totales.
+        // Asignamos al equipo con menos jugadores (desempate favorece al equipo 0).
+        return team0Count <= team1Count ? 0 : 1;
     }
 
     private void RebuildPlayerList()
@@ -110,7 +137,6 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         {
             return team;
         }
-
         return -1;
     }
 
@@ -134,6 +160,12 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     public override void OnPlayerEnteredRoom(Player newPlayer)
     {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            EnsureReadyFlag(newPlayer);
+            EnsureTeamForPlayer(newPlayer);
+        }
+
         RebuildPlayerList();
         RefreshLobbyStatus();
         RefreshStartButtonState();
@@ -148,6 +180,12 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     public override void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps)
     {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            EnsureTeamForPlayer(targetPlayer);
+            EnsureReadyFlag(targetPlayer);
+        }
+
         if (playerEntries.TryGetValue(targetPlayer.ActorNumber, out LobbyPlayerEntry entry))
         {
             entry.ApplyPlayerProperties(targetPlayer);
@@ -161,5 +199,14 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     {
         startButton.gameObject.SetActive(PhotonNetwork.IsMasterClient);
         RefreshStartButtonState();
+
+        if (PhotonNetwork.IsMasterClient)
+        {
+            foreach (var player in PhotonNetwork.PlayerList)
+            {
+                EnsureReadyFlag(player);
+                EnsureTeamForPlayer(player);
+            }
+        }
     }
 }
